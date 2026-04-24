@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa Soberano de Primos — Edición Completa</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+:root {
+–orange: #ff6b35;
+–orange-dim: rgba(255,107,53,0.15);
+–bg: #000;
+–panel: #080808;
+–border: #1c1c1c;
+–text-dim: #555;
+–text-mid: #888;
+–twin: #00e5ff;
+–gap: #b4ff39;
+}
+
+- { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+background: var(–bg);
+color: #fff;
+font-family: ‘Share Tech Mono’, monospace;
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 12px 8px;
+gap: 10px;
+}
+
+header {
+text-align: center;
+}
+header h1 {
+font-family: ‘Orbitron’, sans-serif;
+font-size: clamp(0.6rem, 2.5vw, 1rem);
+font-weight: 900;
+letter-spacing: 0.35em;
+color: var(–orange);
+text-transform: uppercase;
+}
+header p {
+font-size: 0.55rem;
+color: var(–text-dim);
+letter-spacing: 0.2em;
+margin-top: 3px;
+}
+
+.app {
+display: flex;
+gap: 12px;
+align-items: flex-start;
+flex-wrap: wrap;
+justify-content: center;
+width: 100%;
+max-width: 980px;
+}
+
+/* ── CANVAS ── */
+.canvas-wrap {
+position: relative;
+flex-shrink: 0;
+}
+canvas#c {
+display: block;
+border-radius: 50%;
+cursor: crosshair;
+box-shadow: 0 0 80px rgba(255,107,53,0.12), 0 0 200px rgba(255,107,53,0.04);
+}
+
+/* ── PANELS ── */
+.side {
+display: flex;
+flex-direction: column;
+gap: 8px;
+width: 210px;
+}
+
+.box {
+background: var(–panel);
+border: 1px solid var(–border);
+border-radius: 4px;
+padding: 8px 10px;
+}
+
+.box-title {
+font-size: 0.5rem;
+color: var(–text-dim);
+letter-spacing: 0.2em;
+text-transform: uppercase;
+margin-bottom: 6px;
+border-bottom: 1px solid var(–border);
+padding-bottom: 4px;
+}
+
+/* Big number */
+.big-num {
+font-family: ‘Orbitron’, sans-serif;
+font-size: 2rem;
+font-weight: 900;
+color: var(–orange);
+text-align: center;
+text-shadow: 0 0 20px rgba(255,107,53,0.4);
+line-height: 1;
+}
+.big-sub {
+font-size: 0.52rem;
+color: var(–text-dim);
+text-align: center;
+letter-spacing: 0.15em;
+margin-top: 3px;
+}
+
+/* Formula display */
+.formula {
+font-size: 0.6rem;
+color: #aaa;
+text-align: center;
+line-height: 1.6;
+padding: 4px 0;
+}
+.formula .val { color: var(–orange); }
+
+/* Stats rows */
+.stat-row {
+display: flex;
+justify-content: space-between;
+font-size: 0.58rem;
+color: var(–text-dim);
+padding: 2px 0;
+}
+.stat-row span:last-child { color: var(–orange); }
+.stat-row.twin span:last-child { color: var(–twin); }
+.stat-row.gap-row span:last-child { color: var(–gap); }
+
+/* Buttons */
+.btn {
+background: var(–panel);
+border: 1px solid var(–orange);
+color: var(–orange);
+font-family: ‘Share Tech Mono’, monospace;
+font-size: 0.6rem;
+letter-spacing: 0.12em;
+padding: 7px 6px;
+cursor: pointer;
+border-radius: 2px;
+text-transform: uppercase;
+transition: background 0.15s, color 0.15s;
+width: 100%;
+}
+.btn:hover { background: #1a0800; }
+.btn.active { background: var(–orange); color: #000; font-weight: bold; }
+.btn.secondary {
+border-color: var(–border);
+color: var(–text-mid);
+}
+.btn.secondary:hover { background: #111; color: #fff; }
+.btn.secondary.active { background: #1a1a1a; color: #fff; border-color: #555; }
+
+.btn-row { display: flex; gap: 5px; }
+.btn-row .btn { flex: 1; }
+
+/* Toggles */
+.toggle-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 4px;
+}
+.toggle {
+display: flex;
+align-items: center;
+gap: 5px;
+font-size: 0.55rem;
+color: var(–text-mid);
+cursor: pointer;
+padding: 4px 5px;
+border: 1px solid var(–border);
+border-radius: 3px;
+transition: background 0.15s;
+user-select: none;
+}
+.toggle:hover { background: #111; }
+.toggle.on { border-color: #333; color: #fff; }
+.toggle .dot {
+width: 7px; height: 7px;
+border-radius: 50%;
+background: var(–text-dim);
+flex-shrink: 0;
+transition: background 0.15s;
+}
+.toggle.on .dot { background: var(–orange); }
+.toggle.twin-toggle.on .dot { background: var(–twin); }
+.toggle.gap-toggle.on .dot { background: var(–gap); }
+.toggle.guide-toggle.on .dot { background: #4488ff; }
+.toggle.compare-toggle.on .dot { background: #444; }
+
+/* Slider */
+.slider-wrap { padding: 2px 0; }
+.slider-label {
+display: flex;
+justify-content: space-between;
+font-size: 0.52rem;
+color: var(–text-dim);
+margin-bottom: 4px;
+}
+.slider-label span:last-child { color: var(–orange); }
+input[type=range] {
+-webkit-appearance: none;
+width: 100%;
+height: 2px;
+background: #1e1e1e;
+outline: none;
+border-radius: 2px;
+}
+input[type=range]::-webkit-slider-thumb {
+-webkit-appearance: none;
+width: 11px; height: 11px;
+border-radius: 50%;
+background: var(–orange);
+cursor: pointer;
+}
+
+/* Prime list */
+.prime-list {
+height: 100px;
+overflow-y: auto;
+display: flex;
+flex-wrap: wrap;
+gap: 3px;
+align-content: flex-start;
+padding: 2px;
+}
+.prime-list::-webkit-scrollbar { width: 3px; }
+.prime-list::-webkit-scrollbar-thumb { background: #222; }
+
+.ptag {
+font-size: 0.55rem;
+padding: 1px 4px;
+border-radius: 2px;
+border: 1px solid #1a1000;
+color: var(–orange);
+animation: pop 0.25s ease;
+}
+.ptag.is-twin { color: var(–twin); border-color: #002a2e; }
+.ptag.is-new { background: #120800; border-color: var(–orange); }
+
+@keyframes pop {
+0% { transform:scale(1.3); opacity:0.4; }
+100% { transform:scale(1); opacity:1; }
+}
+
+/* Narrator */
+.narrator {
+font-size: 0.58rem;
+color: #aaa;
+line-height: 1.6;
+min-height: 60px;
+padding: 4px 2px;
+}
+.narrator .hl { color: var(–orange); }
+.narrator .hl-twin { color: var(–twin); }
+.narrator .hl-gap { color: var(–gap); }
+
+/* Factor proof */
+.factor-proof {
+font-size: 0.55rem;
+color: #666;
+line-height: 1.7;
+min-height: 40px;
+}
+.factor-proof .ok { color: #4caf50; }
+.factor-proof .label { color: var(–text-dim); }
+
+/* Tooltip */
+.tooltip {
+position: fixed;
+background: #0d0d0d;
+border: 1px solid var(–orange);
+color: var(–orange);
+font-size: 0.6rem;
+padding: 4px 8px;
+border-radius: 3px;
+pointer-events: none;
+display: none;
+z-index: 100;
+font-family: ‘Share Tech Mono’, monospace;
+line-height: 1.5;
+}
+</style>
+
+</head>
+<body>
+
+<header>
+  <h1>Mapa Soberano de Primos</h1>
+  <p>proporción áurea φ = (1+√5)/2 · distribución armónica en coordenadas polares</p>
+</header>
+
+<div class="app">
+
+  <!-- LEFT PANEL -->
+
+  <div class="side">
+
+```
+<!-- Current prime -->
+<div class="box">
+  <div class="box-title">primo actual</div>
+  <div class="big-num" id="bigNum">—</div>
+  <div class="big-sub" id="bigSub">—</div>
+</div>
+
+<!-- Formula live -->
+<div class="box">
+  <div class="box-title">fórmula en vivo</div>
+  <div class="formula" id="formulaBox">
+    θ = p × φ × 2π<br>
+    <span class="val" id="fVal">esperando...</span>
+  </div>
+</div>
+
+<!-- Narrator -->
+<div class="box">
+  <div class="box-title">modo historia</div>
+  <div class="narrator" id="narrator">Presiona ▶ ANIMAR para comenzar la narración en tiempo real...</div>
+</div>
+
+<!-- Factor proof -->
+<div class="box">
+  <div class="box-title">¿por qué es primo?</div>
+  <div class="factor-proof" id="factorProof">Selecciona un primo para ver la demostración...</div>
+</div>
+```
+
+  </div>
+
+  <!-- CANVAS -->
+
+  <div class="canvas-wrap">
+    <canvas id="c"></canvas>
+  </div>
+
+  <!-- RIGHT PANEL -->
+
+  <div class="side">
+
+```
+<!-- Controls -->
+<div class="box">
+  <div class="box-title">controles</div>
+  <div class="btn-row" style="margin-bottom:5px">
+    <button class="btn" id="btnPlay" onclick="togglePlay()">▶ ANIMAR</button>
+    <button class="btn secondary" onclick="resetMap()">↺ RESET</button>
+  </div>
+  <button class="btn secondary" onclick="drawAll()" style="margin-bottom:5px">⚡ MOSTRAR TODO</button>
+
+  <div class="slider-wrap">
+    <div class="slider-label"><span>VELOCIDAD</span><span id="speedVal">30</span></div>
+    <input type="range" id="speedSlider" min="1" max="200" value="30"
+      oninput="document.getElementById('speedVal').value=this.value">
+  </div>
+
+  <div class="slider-wrap" style="margin-top:6px">
+    <div class="slider-label"><span>LÍMITE</span><span id="limVal">10000</span></div>
+    <input type="range" id="limSlider" min="200" max="40000" step="200" value="10000"
+      oninput="onLimChange(this.value)">
+  </div>
+</div>
+
+<!-- Capas visuales -->
+<div class="box">
+  <div class="box-title">capas visuales</div>
+  <div class="toggle-grid">
+    <div class="toggle twin-toggle on" id="tTwin" onclick="toggleOpt('twin')">
+      <div class="dot"></div>GEMELOS
+    </div>
+    <div class="toggle gap-toggle on" id="tGap" onclick="toggleOpt('gap')">
+      <div class="dot"></div>GAPS
+    </div>
+    <div class="toggle guide-toggle on" id="tGuide" onclick="toggleOpt('guide')">
+      <div class="dot"></div>ESPIRAL
+    </div>
+    <div class="toggle compare-toggle" id="tCompare" onclick="toggleOpt('compare')">
+      <div class="dot"></div>COMPARAR
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="box">
+  <div class="box-title">estadísticas</div>
+  <div class="stat-row"><span>Primos graficados</span><span id="sTotal">0</span></div>
+  <div class="stat-row twin"><span>Pares gemelos</span><span id="sTwins">0</span></div>
+  <div class="stat-row gap-row"><span>Mayor gap</span><span id="sMaxGap">—</span></div>
+  <div class="stat-row"><span>Gap promedio</span><span id="sAvgGap">—</span></div>
+  <div class="stat-row"><span>Densidad</span><span id="sDensity">—</span></div>
+</div>
+
+<!-- Prime list -->
+<div class="box">
+  <div class="box-title">primos encontrados</div>
+  <div class="prime-list" id="primeList"></div>
+</div>
+```
+
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const phi = (1 + Math.sqrt(5)) / 2;
+
+let primos = [], twinSet = new Set(), gapMap = new Map();
+let drawn = 0, animating = false, animId = null;
+let W, H, cx, cy, maxR;
+let twinCount = 0, maxGap = 0, totalGap = 0;
+
+const opts = { twin: true, gap: true, guide: true, compare: false };
+
+// ── RESIZE ──────────────────────────────────────────────
+function resize() {
+  const s = Math.min(window.innerWidth * 0.92, window.innerHeight * 0.52, 500);
+  canvas.width = s; canvas.height = s;
+  W = s; H = s; cx = W/2; cy = H/2; maxR = W/2 - 8;
+}
+
+// ── SIEVE ───────────────────────────────────────────────
+function sieve(limit) {
+  const criba = new Uint8Array(limit).fill(1);
+  criba[0] = criba[1] = 0;
+  for (let i = 2; i*i < limit; i++)
+    if (criba[i]) for (let j=i*i; j<limit; j+=i) criba[j]=0;
+  const out = [];
+  for (let i=2; i<limit; i++) if (criba[i]) out.push(i);
+  return out;
+}
+
+function buildMeta() {
+  twinSet.clear(); gapMap.clear();
+  twinCount = 0; maxGap = 0; totalGap = 0;
+  for (let i=0; i<primos.length; i++) {
+    if (i > 0) {
+      const g = primos[i] - primos[i-1];
+      gapMap.set(primos[i], g);
+      if (g > maxGap) maxGap = g;
+      totalGap += g;
+    }
+    if (i < primos.length-1 && primos[i+1]-primos[i]===2) {
+      twinSet.add(primos[i]); twinSet.add(primos[i+1]);
+      twinCount++;
+    }
+  }
+}
+
+// ── COLOR ───────────────────────────────────────────────
+function magma(t) {
+  const r = Math.round(Math.min(255, t<0.5 ? t*2*150 : 150+(t-0.5)*2*105));
+  const g = Math.round(t<0.5 ? t*2*20 : 20+(t-0.5)*2*80);
+  const b = Math.round(t<0.3 ? t/0.3*180 : t<0.6 ? 180-(t-0.3)/0.3*130 : 50+(t-0.6)/0.4*30);
+  return [r,g,b];
+}
+
+function gapColor(gap) {
+  if (gap <= 2) return [80,80,80];
+  if (gap <= 6) return [255,107,53];
+  if (gap <= 14) return [255,200,0];
+  return [180,255,57];
+}
+
+// ── DRAW BACKGROUND ─────────────────────────────────────
+function drawBg() {
+  ctx.clearRect(0,0,W,H);
+  const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,maxR);
+  grad.addColorStop(0,'#09030a');
+  grad.addColorStop(1,'#000000');
+  ctx.fillStyle = grad;
+  ctx.beginPath(); ctx.arc(cx,cy,maxR,0,Math.PI*2); ctx.fill();
+
+  // Guide spiral
+  if (opts.guide) {
+    ctx.save();
+    ctx.globalAlpha = 0.07;
+    ctx.strokeStyle = '#4488ff';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    for (let i=0; i<3000; i++) {
+      const t = i/3000;
+      const theta = i * phi * 2 * Math.PI;
+      const r = t * maxR;
+      const x = cx + r*Math.cos(theta);
+      const y = cy + r*Math.sin(theta);
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Compare: non-primes in grey
+  if (opts.compare && primos.length > 0) {
+    const limit = primos[primos.length-1]+1;
+    const primeSet = new Set(primos);
+    ctx.globalAlpha = 0.12;
+    for (let n=2; n<Math.min(limit,5000); n++) {
+      if (primeSet.has(n)) continue;
+      const theta = n * phi * 2 * Math.PI;
+      const r = (n/limit)*maxR;
+      const x = cx + r*Math.cos(theta);
+      const y = cy + r*Math.sin(theta);
+      ctx.beginPath(); ctx.arc(x,y,0.7,0,Math.PI*2);
+      ctx.fillStyle='#666'; ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ── PLOT PRIME ──────────────────────────────────────────
+function plotPrime(p, highlight=false) {
+  const maxP = primos[primos.length-1];
+  const theta = p * phi * 2 * Math.PI;
+  const r = (p/maxP)*maxR;
+  const x = cx + r*Math.cos(theta);
+  const y = cy + r*Math.sin(theta);
+  const t = p/maxP;
+
+  let color;
+  const gap = gapMap.get(p) || 2;
+
+  if (opts.twin && twinSet.has(p)) {
+    color = highlight ? [200,255,255] : [0,229,255];
+  } else if (opts.gap && gap > 6) {
+    color = highlight ? [220,255,120] : gapColor(gap);
+  } else {
+    const [r2,g2,b2] = magma(t);
+    color = highlight ? [255,255,255] : [r2,g2,b2];
+  }
+
+  const size = highlight ? Math.max(2,4-t*2) : Math.max(0.6,2.5-t*1.5);
+
+  if (highlight) {
+    ctx.beginPath(); ctx.arc(x,y,size+5,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${color[0]},${color[1]},${color[2]},0.12)`; ctx.fill();
+  }
+
+  ctx.beginPath(); ctx.arc(x,y,size,0,Math.PI*2);
+  ctx.fillStyle=`rgb(${color[0]},${color[1]},${color[2]})`;
+  ctx.globalAlpha = highlight ? 1 : 0.9;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+// ── NARRATOR ────────────────────────────────────────────
+function narrate(p, idx) {
+  const theta = (p * phi * 2 * Math.PI) % (2*Math.PI);
+  const deg = (theta * 180/Math.PI).toFixed(1);
+  const gap = gapMap.get(p) || '—';
+  const isTwin = twinSet.has(p);
+  const maxP = primos[primos.length-1];
+  const r = ((p/maxP)*100).toFixed(1);
+
+  let text = `El primo <span class="hl">${p}</span> (#${idx+1}) cae a<br>`;
+  text += `θ = ${p} × φ × 2π = <span class="hl">${deg}°</span><br>`;
+  text += `radio = <span class="hl">${r}%</span> del máximo<br>`;
+  if (gap !== '—') text += `gap al anterior: <span class="${gap>6?'hl-gap':'hl'}">${gap}</span><br>`;
+  if (isTwin) text += `<span class="hl-twin">✦ primo gemelo</span>`;
+
+  document.getElementById('narrator').innerHTML = text;
+}
+
+// ── FACTOR PROOF ─────────────────────────────────────────
+function showFactorProof(p) {
+  const sqrt = Math.floor(Math.sqrt(p));
+  let html = `<span class="label">¿Es ${p} primo?</span><br>`;
+  html += `√${p} ≈ ${Math.sqrt(p).toFixed(2)} → probar hasta ${sqrt}<br>`;
+  let found = false;
+  for (let i=2; i<=sqrt; i++) {
+    if (p % i === 0) { found = true; html += `${p} ÷ ${i} = ${p/i} ✗`; break; }
+  }
+  if (!found) {
+    const checks = Math.min(sqrt, 5);
+    for (let i=2; i<=checks; i++) {
+      html += `<span class="ok">${p} ÷ ${i} → resto ${p%i} ✓</span><br>`;
+    }
+    if (sqrt > 5) html += `... (todos los divisores fallan)<br>`;
+    html += `<span class="ok">∴ ${p} ES primo ✓</span>`;
+  }
+  document.getElementById('factorProof').innerHTML = html;
+}
+
+// ── FORMULA LIVE ─────────────────────────────────────────
+function updateFormula(p) {
+  const raw = p * phi * 2 * Math.PI;
+  const reduced = raw % (2*Math.PI);
+  document.getElementById('fVal').textContent =
+    `${p} × ${phi.toFixed(5)} × 2π = ${raw.toFixed(2)} rad (${(reduced*180/Math.PI).toFixed(1)}°)`;
+}
+
+// ── STATS ────────────────────────────────────────────────
+function updateStats(p, idx) {
+  document.getElementById('bigNum').textContent = p;
+  document.getElementById('bigSub').textContent = `primo #${idx+1}`;
+  document.getElementById('sTotal').textContent = idx+1;
+  document.getElementById('sTwins').textContent = [...twinSet].filter(x=>x<=p).length/2|0;
+  document.getElementById('sMaxGap').textContent = idx>0 ? [...gapMap.values()].filter((_,i)=>i<=idx).reduce((a,b)=>Math.max(a,b),0) : '—';
+  const gaps = [...gapMap.values()].slice(0,idx);
+  document.getElementById('sAvgGap').textContent = gaps.length ? (gaps.reduce((a,b)=>a+b,0)/gaps.length).toFixed(1) : '—';
+  document.getElementById('sDensity').textContent = ((idx+1)/p*100).toFixed(2)+'%';
+
+  updateFormula(p);
+  narrate(p, idx);
+  showFactorProof(p);
+
+  // Prime tag list
+  const list = document.getElementById('primeList');
+  const prev = list.querySelector('.is-new');
+  if (prev) prev.classList.remove('is-new');
+  const tag = document.createElement('span');
+  tag.className = 'ptag is-new' + (twinSet.has(p) ? ' is-twin' : '');
+  tag.textContent = p;
+  list.appendChild(tag);
+  list.scrollTop = list.scrollHeight;
+  while (list.children.length > 300) list.removeChild(list.firstChild);
+}
+
+// ── RESET ────────────────────────────────────────────────
+function resetMap() {
+  stopAnim();
+  drawn = 0;
+  drawBg();
+  document.getElementById('bigNum').textContent = '—';
+  document.getElementById('bigSub').textContent = '—';
+  document.getElementById('sTotal').textContent = '0';
+  document.getElementById('sTwins').textContent = '0';
+  document.getElementById('sMaxGap').textContent = '—';
+  document.getElementById('sAvgGap').textContent = '—';
+  document.getElementById('sDensity').textContent = '—';
+  document.getElementById('primeList').innerHTML = '';
+  document.getElementById('narrator').textContent = 'Presiona ▶ ANIMAR para comenzar...';
+  document.getElementById('factorProof').textContent = 'Selecciona un primo para ver la demostración...';
+  document.getElementById('fVal').textContent = 'esperando...';
+}
+
+function drawAll() {
+  stopAnim(); resetMap();
+  for (let i=0; i<primos.length; i++) plotPrime(primos[i], false);
+  drawn = primos.length;
+  const last = primos[primos.length-1];
+  updateStats(last, primos.length-1);
+}
+
+// ── ANIMATE ──────────────────────────────────────────────
+function stopAnim() {
+  animating = false;
+  if (animId) { clearTimeout(animId); cancelAnimationFrame(animId); }
+  const btn = document.getElementById('btnPlay');
+  btn.textContent = '▶ ANIMAR'; btn.classList.remove('active');
+}
+
+function togglePlay() {
+  if (animating) { stopAnim(); return; }
+  if (drawn >= primos.length) resetMap();
+  animating = true;
+  const btn = document.getElementById('btnPlay');
+  btn.textContent = '⏸ PAUSAR'; btn.classList.add('active');
+  step();
+}
+
+function step() {
+  if (!animating) return;
+  const speed = parseInt(document.getElementById('speedSlider').value);
+  const batch = Math.max(1, Math.floor(speed/8));
+
+  for (let b=0; b<batch && drawn<primos.length; b++) {
+    if (drawn>0) plotPrime(primos[drawn-1], false);
+    plotPrime(primos[drawn], true);
+    updateStats(primos[drawn], drawn);
+    drawn++;
+  }
+
+  if (drawn >= primos.length) { stopAnim(); return; }
+
+  const delay = Math.max(1, 55 - speed/4);
+  animId = setTimeout(() => requestAnimationFrame(step), delay);
+}
+
+// ── TOGGLES ──────────────────────────────────────────────
+function toggleOpt(key) {
+  opts[key] = !opts[key];
+  const el = document.getElementById(
+    key==='twin'?'tTwin':key==='gap'?'tGap':key==='guide'?'tGuide':'tCompare'
+  );
+  el.classList.toggle('on', opts[key]);
+  const wasFull = drawn >= primos.length;
+  stopAnim();
+  drawBg();
+  for (let i=0; i<drawn; i++) plotPrime(primos[i], false);
+  if (!wasFull) {
+    // resume
+    animating = true;
+    const btn = document.getElementById('btnPlay');
+    btn.textContent = '⏸ PAUSAR'; btn.classList.add('active');
+    step();
+  }
+}
+
+// ── LIMIT CHANGE ─────────────────────────────────────────
+function onLimChange(val) {
+  document.getElementById('limVal').textContent = val;
+  stopAnim();
+  primos = sieve(parseInt(val));
+  buildMeta();
+  resetMap();
+}
+
+// ── HOVER TOOLTIP ────────────────────────────────────────
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const maxP = primos[primos.length-1] || 1;
+  let closest = null, minD = 10;
+
+  for (let i=0; i<Math.min(drawn, primos.length); i++) {
+    const p = primos[i];
+    const theta = p*phi*2*Math.PI;
+    const r = (p/maxP)*maxR;
+    const x = cx+r*Math.cos(theta);
+    const y = cy+r*Math.sin(theta);
+    const d = Math.hypot(mx-x, my-y);
+    if (d < minD) { minD=d; closest=p; }
+  }
+
+  const tip = document.getElementById('tooltip');
+  if (closest) {
+    const gap = gapMap.get(closest);
+    const twin = twinSet.has(closest);
+    let html = `primo: ${closest}`;
+    if (gap) html += `<br>gap: ${gap}`;
+    if (twin) html += `<br>✦ gemelo`;
+    tip.innerHTML = html;
+    tip.style.display = 'block';
+    tip.style.left = (e.clientX+14)+'px';
+    tip.style.top = (e.clientY-10)+'px';
+    showFactorProof(closest);
+  } else {
+    tip.style.display = 'none';
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  document.getElementById('tooltip').style.display = 'none';
+});
+
+// ── INIT ─────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  resize(); drawBg();
+  for (let i=0; i<drawn; i++) plotPrime(primos[i], false);
+});
+
+resize();
+primos = sieve(10000);
+buildMeta();
+drawBg();
+</script>
+
+</body>
+</html>
